@@ -1,0 +1,1541 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>The Garden — Rob's Plant OS</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=DM+Sans:wght@300;400;500;600&family=DM+Mono:wght@400;500&display=swap');
+
+  :root {
+    --soil: #1a1a18;
+    --bark: #2c2a25;
+    --moss: #3d4a2e;
+    --leaf: #5c7a3e;
+    --sage: #8aab6e;
+    --mist: #b8cfa4;
+    --cream: #f0ead8;
+    --warm: #e8dcc8;
+    --blush: #d4856a;
+    --gold: #c9a84c;
+    --alert: #e07b5a;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    background: var(--soil);
+    color: var(--cream);
+    font-family: 'DM Sans', sans-serif;
+    min-height: 100vh;
+    overflow-x: hidden;
+  }
+
+  /* HEADER */
+  .header {
+    padding: 28px 24px 20px;
+    border-bottom: 1px solid rgba(255,255,255,0.07);
+    display: flex;
+    align-items: flex-end;
+    justify-content: space-between;
+    gap: 12px;
+  }
+  .header-left h1 {
+    font-family: 'DM Serif Display', serif;
+    font-size: 28px;
+    color: var(--cream);
+    letter-spacing: -0.5px;
+    line-height: 1;
+  }
+  .header-left p {
+    font-size: 13px;
+    color: var(--sage);
+    margin-top: 4px;
+    font-weight: 300;
+  }
+
+  /* WEATHER STRIP */
+  .weather-strip {
+    border-bottom: 1px solid rgba(255,255,255,0.07);
+    background: rgba(0,0,0,0.15);
+    overflow: hidden;
+  }
+  .weather-current {
+    padding: 14px 20px 10px;
+    display: flex;
+    align-items: center;
+    gap: 14px;
+  }
+  .weather-icon { font-size: 36px; line-height: 1; }
+  .weather-main { flex: 1; }
+  .weather-temp {
+    font-family: 'DM Serif Display', serif;
+    font-size: 28px;
+    color: var(--cream);
+    line-height: 1;
+  }
+  .weather-desc {
+    font-size: 12px;
+    color: var(--mist);
+    margin-top: 2px;
+    text-transform: capitalize;
+  }
+  .weather-meta {
+    font-size: 11px;
+    color: rgba(255,255,255,0.35);
+    margin-top: 3px;
+    font-family: 'DM Mono', monospace;
+  }
+  .weather-plant-tip {
+    background: rgba(92,122,62,0.18);
+    border: 1px solid rgba(92,122,62,0.3);
+    border-radius: 10px;
+    padding: 8px 12px;
+    font-size: 11px;
+    color: var(--sage);
+    line-height: 1.5;
+    max-width: 160px;
+    text-align: right;
+  }
+  .weather-plant-tip.warn {
+    background: rgba(224,123,90,0.15);
+    border-color: rgba(224,123,90,0.3);
+    color: var(--alert);
+  }
+  .weather-plant-tip.caution {
+    background: rgba(201,168,76,0.15);
+    border-color: rgba(201,168,76,0.3);
+    color: var(--gold);
+  }
+
+  /* FORECAST ROW */
+  .forecast-row {
+    display: flex;
+    overflow-x: auto;
+    scrollbar-width: none;
+    padding: 0 16px 14px;
+    gap: 8px;
+  }
+  .forecast-row::-webkit-scrollbar { display: none; }
+  .forecast-day {
+    flex-shrink: 0;
+    background: rgba(255,255,255,0.04);
+    border: 1px solid rgba(255,255,255,0.07);
+    border-radius: 10px;
+    padding: 10px 12px;
+    text-align: center;
+    min-width: 72px;
+  }
+  .forecast-day.today {
+    border-color: var(--leaf);
+    background: rgba(92,122,62,0.12);
+  }
+  .forecast-dow {
+    font-size: 10px;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: rgba(255,255,255,0.4);
+    font-family: 'DM Mono', monospace;
+  }
+  .forecast-icon { font-size: 20px; margin: 4px 0; }
+  .forecast-hi { font-size: 13px; font-weight: 600; color: var(--cream); }
+  .forecast-lo { font-size: 11px; color: rgba(255,255,255,0.35); }
+  .forecast-rain {
+    font-size: 10px;
+    color: #7bb8d4;
+    margin-top: 3px;
+    font-family: 'DM Mono', monospace;
+  }
+
+  .weather-loading {
+    padding: 18px 20px;
+    font-size: 12px;
+    color: rgba(255,255,255,0.3);
+    font-family: 'DM Mono', monospace;
+  }
+  .header-right {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    flex-shrink: 0;
+  }
+  .add-btn {
+    background: var(--moss);
+    border: 1px solid var(--leaf);
+    color: var(--cream);
+    border-radius: 10px;
+    padding: 8px 14px;
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+    font-family: 'DM Sans', sans-serif;
+    transition: all 0.2s;
+    white-space: nowrap;
+  }
+  .add-btn:active { background: var(--leaf); transform: scale(0.97); }
+
+  .live-dot {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 11px;
+    color: var(--sage);
+    font-family: 'DM Mono', monospace;
+  }
+  .live-dot span {
+    width: 7px; height: 7px;
+    background: var(--sage);
+    border-radius: 50%;
+    animation: pulse 2s infinite;
+  }
+  @keyframes pulse {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.3; }
+  }
+
+  /* MODAL OVERLAY */
+  .modal-overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,0.7);
+    z-index: 100;
+    display: none;
+    align-items: flex-end;
+    justify-content: center;
+  }
+  .modal-overlay.open { display: flex; }
+
+  .modal-sheet {
+    background: #232320;
+    border-radius: 20px 20px 0 0;
+    width: 100%;
+    max-width: 600px;
+    max-height: 90vh;
+    overflow-y: auto;
+    padding: 24px 20px 40px;
+    border-top: 1px solid rgba(255,255,255,0.1);
+    animation: slideUp 0.25s ease;
+  }
+  @keyframes slideUp {
+    from { transform: translateY(40px); opacity: 0; }
+    to { transform: translateY(0); opacity: 1; }
+  }
+
+  .modal-handle {
+    width: 36px; height: 4px;
+    background: rgba(255,255,255,0.15);
+    border-radius: 4px;
+    margin: 0 auto 20px;
+  }
+  .modal-title {
+    font-family: 'DM Serif Display', serif;
+    font-size: 20px;
+    color: var(--cream);
+    margin-bottom: 18px;
+  }
+
+  /* FORM FIELDS */
+  .field-group {
+    margin-bottom: 14px;
+  }
+  .field-label {
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: var(--sage);
+    margin-bottom: 6px;
+    font-weight: 600;
+  }
+  .field-input, .field-select, .field-textarea {
+    width: 100%;
+    background: rgba(255,255,255,0.06);
+    border: 1px solid rgba(255,255,255,0.1);
+    border-radius: 10px;
+    color: var(--cream);
+    font-family: 'DM Sans', sans-serif;
+    font-size: 14px;
+    padding: 11px 14px;
+    outline: none;
+    transition: border-color 0.2s;
+  }
+  .field-input:focus, .field-select:focus, .field-textarea:focus {
+    border-color: var(--leaf);
+  }
+  .field-select option { background: #232320; }
+  .field-textarea { min-height: 70px; resize: vertical; line-height: 1.5; }
+
+  .field-row {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+  }
+
+  .emoji-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-top: 4px;
+  }
+  .emoji-opt {
+    font-size: 22px;
+    cursor: pointer;
+    padding: 6px;
+    border-radius: 8px;
+    border: 2px solid transparent;
+    transition: border-color 0.15s;
+    line-height: 1;
+  }
+  .emoji-opt.selected { border-color: var(--leaf); background: rgba(92,122,62,0.2); }
+
+  .ai-generating {
+    padding: 12px 14px;
+    background: rgba(92,122,62,0.1);
+    border: 1px solid rgba(92,122,62,0.2);
+    border-radius: 10px;
+    font-size: 12px;
+    color: var(--sage);
+    margin-bottom: 14px;
+    display: none;
+    align-items: center;
+    gap: 8px;
+  }
+  .ai-generating.show { display: flex; }
+  .ai-spinner {
+    width: 14px; height: 14px;
+    border: 2px solid rgba(138,171,110,0.3);
+    border-top-color: var(--sage);
+    border-radius: 50%;
+    animation: spin 0.8s linear infinite;
+    flex-shrink: 0;
+  }
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  .modal-actions {
+    display: flex;
+    gap: 10px;
+    margin-top: 20px;
+  }
+  .btn-cancel {
+    flex: 1;
+    background: rgba(255,255,255,0.06);
+    border: 1px solid rgba(255,255,255,0.1);
+    color: var(--mist);
+    border-radius: 10px;
+    padding: 13px;
+    font-size: 14px;
+    font-weight: 500;
+    cursor: pointer;
+    font-family: 'DM Sans', sans-serif;
+  }
+  .btn-save {
+    flex: 2;
+    background: var(--moss);
+    border: 1px solid var(--leaf);
+    color: var(--cream);
+    border-radius: 10px;
+    padding: 13px;
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+    font-family: 'DM Sans', sans-serif;
+    transition: all 0.2s;
+  }
+  .btn-save:disabled { opacity: 0.4; cursor: not-allowed; }
+  .btn-save:not(:disabled):active { background: var(--leaf); }
+
+  /* REMOVE BUTTON inside card */
+  .remove-btn {
+    width: 100%;
+    margin-top: 8px;
+    background: rgba(224,123,90,0.1);
+    border: 1px solid rgba(224,123,90,0.25);
+    color: var(--alert);
+    border-radius: 10px;
+    padding: 10px;
+    font-size: 13px;
+    font-weight: 500;
+    cursor: pointer;
+    font-family: 'DM Sans', sans-serif;
+    transition: all 0.2s;
+  }
+  .remove-btn:active { background: rgba(224,123,90,0.25); }
+
+  /* CONFIRM DIALOG */
+  .confirm-overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,0.8);
+    z-index: 200;
+    display: none;
+    align-items: center;
+    justify-content: center;
+    padding: 20px;
+  }
+  .confirm-overlay.open { display: flex; }
+  .confirm-box {
+    background: #232320;
+    border-radius: 16px;
+    padding: 24px 20px;
+    width: 100%;
+    max-width: 320px;
+    border: 1px solid rgba(255,255,255,0.1);
+    text-align: center;
+  }
+  .confirm-emoji { font-size: 36px; margin-bottom: 12px; }
+  .confirm-title {
+    font-family: 'DM Serif Display', serif;
+    font-size: 18px;
+    color: var(--cream);
+    margin-bottom: 8px;
+  }
+  .confirm-msg { font-size: 13px; color: var(--mist); margin-bottom: 20px; font-weight: 300; line-height: 1.5; }
+  .confirm-btns { display: flex; gap: 10px; }
+  .confirm-keep {
+    flex: 1; background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.1);
+    color: var(--mist); border-radius: 10px; padding: 11px; font-size: 13px;
+    font-weight: 500; cursor: pointer; font-family: 'DM Sans', sans-serif;
+  }
+  .confirm-remove {
+    flex: 1; background: rgba(224,123,90,0.15); border: 1px solid rgba(224,123,90,0.3);
+    color: var(--alert); border-radius: 10px; padding: 11px; font-size: 13px;
+    font-weight: 600; cursor: pointer; font-family: 'DM Sans', sans-serif;
+  }
+
+  /* SUMMARY BAR */
+  .summary {
+    display: flex;
+    gap: 0;
+    border-bottom: 1px solid rgba(255,255,255,0.07);
+    overflow-x: auto;
+    scrollbar-width: none;
+  }
+  .summary::-webkit-scrollbar { display: none; }
+  .summary-item {
+    flex: 1;
+    min-width: 90px;
+    padding: 14px 16px;
+    border-right: 1px solid rgba(255,255,255,0.07);
+    text-align: center;
+  }
+  .summary-item:last-child { border-right: none; }
+  .summary-item .val {
+    font-family: 'DM Serif Display', serif;
+    font-size: 22px;
+    color: var(--cream);
+  }
+  .summary-item .lbl {
+    font-size: 10px;
+    color: var(--sage);
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    margin-top: 2px;
+  }
+
+  /* FILTER TABS */
+  .tabs {
+    display: flex;
+    gap: 8px;
+    padding: 16px 20px;
+    overflow-x: auto;
+    scrollbar-width: none;
+  }
+  .tabs::-webkit-scrollbar { display: none; }
+  .tab {
+    padding: 6px 14px;
+    border-radius: 20px;
+    font-size: 12px;
+    font-weight: 500;
+    cursor: pointer;
+    border: 1px solid rgba(255,255,255,0.12);
+    color: var(--mist);
+    background: transparent;
+    white-space: nowrap;
+    transition: all 0.2s;
+  }
+  .tab.active {
+    background: var(--moss);
+    border-color: var(--leaf);
+    color: var(--cream);
+  }
+
+  /* PLANT GRID */
+  .grid {
+    padding: 8px 16px 40px;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+  }
+
+  /* PLANT CARD */
+  .card {
+    background: var(--bark);
+    border-radius: 16px;
+    overflow: hidden;
+    border: 1px solid rgba(255,255,255,0.06);
+    transition: transform 0.15s;
+  }
+  .card:active { transform: scale(0.99); }
+
+  .card-header {
+    padding: 16px 18px 12px;
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 12px;
+    cursor: pointer;
+  }
+  .card-emoji {
+    font-size: 32px;
+    line-height: 1;
+    flex-shrink: 0;
+  }
+  .card-title-group { flex: 1; }
+  .card-name {
+    font-family: 'DM Serif Display', serif;
+    font-size: 18px;
+    color: var(--cream);
+    line-height: 1.1;
+  }
+  .card-nickname {
+    font-size: 11px;
+    color: var(--sage);
+    margin-top: 2px;
+    font-style: italic;
+  }
+  .card-location {
+    font-size: 11px;
+    color: rgba(255,255,255,0.35);
+    margin-top: 4px;
+    font-family: 'DM Mono', monospace;
+  }
+
+  /* STATUS BADGE */
+  .status-badge {
+    padding: 4px 10px;
+    border-radius: 20px;
+    font-size: 10px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    flex-shrink: 0;
+  }
+  .status-thriving { background: rgba(92,122,62,0.25); color: var(--sage); border: 1px solid var(--leaf); }
+  .status-watch { background: rgba(201,168,76,0.2); color: var(--gold); border: 1px solid var(--gold); }
+  .status-propagating { background: rgba(212,133,106,0.2); color: var(--blush); border: 1px solid var(--blush); }
+
+  /* WATER SECTION */
+  .water-section {
+    padding: 0 18px 14px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+  }
+  .water-info { flex: 1; }
+  .water-label {
+    font-size: 10px;
+    color: rgba(255,255,255,0.4);
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+  }
+  .water-last {
+    font-family: 'DM Mono', monospace;
+    font-size: 13px;
+    color: var(--mist);
+    margin-top: 2px;
+  }
+  .water-next {
+    font-size: 11px;
+    color: var(--sage);
+    margin-top: 3px;
+  }
+  .water-next.urgent { color: var(--alert); }
+
+  .water-btn {
+    background: var(--moss);
+    border: 1px solid var(--leaf);
+    color: var(--cream);
+    border-radius: 10px;
+    padding: 9px 14px;
+    font-size: 12px;
+    font-weight: 600;
+    cursor: pointer;
+    font-family: 'DM Sans', sans-serif;
+    transition: all 0.2s;
+    white-space: nowrap;
+  }
+  .water-btn:active { background: var(--leaf); transform: scale(0.97); }
+
+  /* PROGRESS BAR */
+  .water-bar-wrap {
+    padding: 0 18px 14px;
+  }
+  .water-bar-track {
+    height: 4px;
+    background: rgba(255,255,255,0.08);
+    border-radius: 4px;
+    overflow: hidden;
+  }
+  .water-bar-fill {
+    height: 100%;
+    border-radius: 4px;
+    transition: width 0.6s ease;
+  }
+  .fill-good { background: var(--sage); }
+  .fill-warn { background: var(--gold); }
+  .fill-urgent { background: var(--alert); }
+
+  /* EXPANDABLE DETAIL */
+  .card-detail {
+    display: none;
+    border-top: 1px solid rgba(255,255,255,0.07);
+    padding: 16px 18px;
+  }
+  .card-detail.open { display: block; }
+
+  .detail-section {
+    margin-bottom: 16px;
+  }
+  .detail-section:last-child { margin-bottom: 0; }
+  .detail-label {
+    font-size: 10px;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    color: var(--sage);
+    margin-bottom: 6px;
+    font-weight: 600;
+  }
+  .detail-text {
+    font-size: 13px;
+    color: var(--mist);
+    line-height: 1.6;
+    font-weight: 300;
+  }
+
+  /* REPOT INDICATOR */
+  .repot-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .repot-icon { font-size: 16px; }
+  .repot-text { font-size: 13px; color: var(--mist); font-weight: 300; }
+
+  /* FACTS */
+  .fact-pill {
+    display: inline-block;
+    background: rgba(138,171,110,0.12);
+    border: 1px solid rgba(138,171,110,0.2);
+    border-radius: 8px;
+    padding: 8px 10px;
+    font-size: 12px;
+    color: var(--mist);
+    margin: 3px 3px 0 0;
+    line-height: 1.4;
+    font-weight: 300;
+  }
+
+  /* WATERING LOG */
+  .log-entries {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    max-height: 100px;
+    overflow-y: auto;
+    scrollbar-width: thin;
+  }
+  .log-entry {
+    font-family: 'DM Mono', monospace;
+    font-size: 11px;
+    color: rgba(255,255,255,0.35);
+    padding: 3px 0;
+    border-bottom: 1px solid rgba(255,255,255,0.04);
+  }
+  .log-entry:last-child { border-bottom: none; }
+
+  /* TOAST */
+  .toast {
+    position: fixed;
+    bottom: 24px;
+    left: 50%;
+    transform: translateX(-50%) translateY(80px);
+    background: var(--moss);
+    border: 1px solid var(--leaf);
+    color: var(--cream);
+    padding: 12px 20px;
+    border-radius: 12px;
+    font-size: 13px;
+    font-weight: 500;
+    transition: transform 0.3s ease;
+    z-index: 999;
+    white-space: nowrap;
+  }
+  .toast.show { transform: translateX(-50%) translateY(0); }
+
+  /* SECTION DIVIDER */
+  .section-divider {
+    padding: 8px 20px 4px;
+    font-size: 10px;
+    text-transform: uppercase;
+    letter-spacing: 0.12em;
+    color: rgba(255,255,255,0.25);
+    font-family: 'DM Mono', monospace;
+  }
+
+  /* TELL WHEN THIRSTY */
+  .thirst-signs {
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
+  }
+  .thirst-sign {
+    display: flex;
+    align-items: flex-start;
+    gap: 8px;
+    font-size: 12px;
+    color: var(--mist);
+    font-weight: 300;
+  }
+  .thirst-sign::before {
+    content: '—';
+    color: var(--sage);
+    flex-shrink: 0;
+    font-family: 'DM Mono', monospace;
+  }
+</style>
+</head>
+<body>
+
+<div class="header">
+  <div class="header-left">
+    <h1>The Garden</h1>
+    <p>Rob's Plant OS · Windermere, FL</p>
+  </div>
+  <div class="header-right">
+    <button class="add-btn" onclick="openAddModal()">＋ Add</button>
+    <div class="live-dot"><span></span> Live</div>
+  </div>
+</div>
+
+<div class="summary">
+  <div class="summary-item">
+    <div class="val" id="total-count">6</div>
+    <div class="lbl">Plants</div>
+  </div>
+  <div class="summary-item">
+    <div class="val" id="thriving-count">—</div>
+    <div class="lbl">Thriving</div>
+  </div>
+  <div class="summary-item">
+    <div class="val" id="water-due-count">—</div>
+    <div class="lbl">Water Due</div>
+  </div>
+  <div class="summary-item">
+    <div class="val" id="last-watered-name">—</div>
+    <div class="lbl">Last Watered</div>
+  </div>
+</div>
+
+<div class="weather-strip" id="weather-strip">
+  <div class="weather-loading" id="weather-loading">Loading Windermere weather…</div>
+</div>
+
+<div class="tabs">
+  <button class="tab active" onclick="filterCards('all', this)">All Plants</button>
+  <button class="tab" onclick="filterCards('indoor', this)">🪴 Indoor</button>
+  <button class="tab" onclick="filterCards('outdoor', this)">☀️ Outdoor</button>
+  <button class="tab" onclick="filterCards('water-due', this)">💧 Water Due</button>
+</div>
+
+<div class="grid" id="plant-grid"></div>
+
+<div class="toast" id="toast"></div>
+
+<!-- ADD PLANT MODAL -->
+<div class="modal-overlay" id="add-modal" onclick="handleOverlayClick(event)">
+  <div class="modal-sheet">
+    <div class="modal-handle"></div>
+    <div class="modal-title">Add a Plant</div>
+
+    <div class="field-group">
+      <div class="field-label">Pick an Emoji</div>
+      <div class="emoji-row" id="emoji-row">
+        🌿 🌱 🌳 🌸 🌺 🌻 🌵 🍃 🪴 🎋 🎍 🍀 🌾 🪷 🍍 🌴
+      </div>
+    </div>
+
+    <div class="field-row">
+      <div class="field-group">
+        <div class="field-label">Plant Name *</div>
+        <input class="field-input" id="f-name" placeholder="e.g. Pothos" />
+      </div>
+      <div class="field-group">
+        <div class="field-label">Nickname</div>
+        <input class="field-input" id="f-nickname" placeholder="e.g. Remy" />
+      </div>
+    </div>
+
+    <div class="field-row">
+      <div class="field-group">
+        <div class="field-label">Location *</div>
+        <select class="field-select" id="f-zone">
+          <option value="indoor">🪴 Indoor</option>
+          <option value="outdoor">☀️ Outdoor</option>
+        </select>
+      </div>
+      <div class="field-group">
+        <div class="field-label">Status</div>
+        <select class="field-select" id="f-status">
+          <option value="thriving">Thriving</option>
+          <option value="watch">Watch</option>
+          <option value="propagating">Propagating</option>
+        </select>
+      </div>
+    </div>
+
+    <div class="field-group">
+      <div class="field-label">Where on the patio / which room?</div>
+      <input class="field-input" id="f-location" placeholder="e.g. Covered Patio (Shade)" />
+    </div>
+
+    <div class="field-row">
+      <div class="field-group">
+        <div class="field-label">Water every (min days)</div>
+        <input class="field-input" id="f-water-min" type="number" placeholder="e.g. 3" min="1" />
+      </div>
+      <div class="field-group">
+        <div class="field-label">Water every (max days)</div>
+        <input class="field-input" id="f-water-max" type="number" placeholder="e.g. 5" min="1" />
+      </div>
+    </div>
+
+    <div class="field-group">
+      <div class="field-label">Any notes? (optional — AI will fill in the rest)</div>
+      <textarea class="field-textarea" id="f-notes" placeholder="e.g. got it from a garage sale, leaves were drooping when I got it…"></textarea>
+    </div>
+
+    <div class="ai-generating" id="ai-generating">
+      <div class="ai-spinner"></div>
+      <span>Generating care info for your plant…</span>
+    </div>
+
+    <div class="modal-actions">
+      <button class="btn-cancel" onclick="closeAddModal()">Cancel</button>
+      <button class="btn-save" id="btn-save" onclick="saveNewPlant()">Add to Garden</button>
+    </div>
+  </div>
+</div>
+
+<!-- CONFIRM REMOVE -->
+<div class="confirm-overlay" id="confirm-overlay">
+  <div class="confirm-box">
+    <div class="confirm-emoji" id="confirm-emoji">🪴</div>
+    <div class="confirm-title" id="confirm-title">Remove this plant?</div>
+    <div class="confirm-msg" id="confirm-msg">This will remove the plant and all its watering history. This can't be undone.</div>
+    <div class="confirm-btns">
+      <button class="confirm-keep" onclick="closeConfirm()">Keep Her</button>
+      <button class="confirm-remove" onclick="confirmRemove()">Remove</button>
+    </div>
+  </div>
+</div>
+
+<script>
+const STORAGE_KEY = 'rob_garden_v1';
+
+const PLANTS = [
+  {
+    id: 'money-tree',
+    emoji: '🌳',
+    name: 'Money Tree',
+    nickname: null,
+    scientific: 'Pachira aquatica',
+    location: 'Indoor · TV Stand',
+    zone: 'indoor',
+    status: 'thriving',
+    waterFreqDays: [10, 14],
+    waterMethod: 'Soak and dry — water thoroughly until it drains from the bottom, then let the top 2–3 inches of soil dry completely before watering again.',
+    thirstSigns: [
+      'Top 2–3 inches of soil are bone dry',
+      'Leaves start to droop slightly',
+      'Pot feels very light when lifted',
+    ],
+    light: 'Bright indirect light. West window filtered through blinds is perfect. Avoid direct sun on leaves.',
+    repot: 'Repot when roots start circling the bottom or poking through drainage holes. Typically every 2 years. Go up only 1–2 pot sizes.',
+    health: 'Newly acquired — acclimating. Watch for leaf drop in first 2 weeks (normal). She should stabilize.',
+    facts: [
+      '🍀 Feng shui symbol of financial luck',
+      '🌊 Native to Central/South American swamps',
+      '🪢 Braided trunks are trained by growers — they stay braided',
+      '🐾 Non-toxic to pets',
+      '🌡️ Loves humidity — Florida air is actually ideal',
+    ],
+  },
+  {
+    id: 'remy',
+    emoji: '🌿',
+    name: 'Satin Pothos',
+    nickname: 'Remy',
+    scientific: 'Scindapsus pictus',
+    location: 'Indoor · Window Shelf',
+    zone: 'indoor',
+    status: 'thriving',
+    waterFreqDays: [7, 10],
+    waterMethod: 'Water when top inch of soil is dry. Water evenly, let drain. She\'s forgiving but hates sitting in water.',
+    thirstSigns: [
+      'Top inch of soil feels dry',
+      'Leaves look slightly less shiny / matte',
+      'Pot feels noticeably lighter',
+      'Older leaves yellowing (overwatering) vs. wilting (underwatering)',
+    ],
+    light: 'Bright indirect light near west window. The long vine reaching toward the window is her chasing light — healthy sign.',
+    repot: 'Repot when roots are circling heavily or coming out the bottom. She\'s a fast grower — probably every 1–2 years.',
+    health: 'Thriving. Floor trailing is totally fine. That long reach vine is a great sign of active growth.',
+    facts: [
+      '✨ Silver markings are not variegation — they\'re a waxy sheen',
+      '🌿 Different species from golden pothos despite the similar look',
+      '💨 NASA Clean Air Study plant — filters airborne toxins',
+      '📏 Can trail 6–10 feet indoors',
+      '🪴 One of the easiest plants to propagate in water',
+    ],
+  },
+  {
+    id: 'haworthia-1',
+    emoji: '🌵',
+    name: 'Haworthia',
+    nickname: 'Lil One',
+    scientific: 'Haworthia spp.',
+    location: 'Indoor · Window Shelf',
+    zone: 'indoor',
+    status: 'thriving',
+    waterFreqDays: [14, 21],
+    waterMethod: 'Water sparingly — less than you think. Drench the soil, let it drain fully, then wait until the soil is completely dry before watering again. In summer, every 2–3 weeks.',
+    thirstSigns: [
+      'Leaves look slightly wrinkled or less plump',
+      'Soil is bone dry all the way through',
+      'Pot is very light',
+    ],
+    light: 'Tolerates lower light than most succulents — perfect for indirect west window. Avoid harsh direct afternoon sun.',
+    repot: 'Slow grower — repot only when clearly root-bound or plant is tilting. Every 2–3 years is typical.',
+    health: 'Stable. These are nearly indestructible. Just don\'t overwater.',
+    facts: [
+      '🌍 Native to South Africa',
+      '🔭 Some species are translucent at the tips to let light in underground',
+      '💧 Stores water in its leaves — can go weeks without water',
+      '🌙 Stays compact — perfect for small spaces',
+    ],
+  },
+  {
+    id: 'caladium',
+    emoji: '🍃',
+    name: 'Caladium',
+    nickname: 'Heart to Heart',
+    scientific: 'Caladium bicolor',
+    location: 'Outdoor · Covered Patio (Shade)',
+    zone: 'outdoor',
+    status: 'thriving',
+    waterFreqDays: [2, 3],
+    waterMethod: 'Keep soil consistently moist but not waterlogged. In Florida summer heat, check every 2 days. Water when top inch is dry.',
+    thirstSigns: [
+      'Leaves drooping or going limp (first sign)',
+      'Top inch of soil feels dry',
+      'Leaf edges starting to curl',
+    ],
+    light: 'Bright indirect / dappled shade only. Keep fully under the patio overhang away from direct west sun — it will burn and bleach fast.',
+    repot: 'Caladiums go dormant in winter — don\'t repot during dormancy. Repot in spring if tubers are crowded.',
+    health: 'Newly placed in correct shaded position. Was drooping on arrival — likely thirsty. Monitor for perk-up after first watering.',
+    facts: [
+      '🎨 Over 1,000 named cultivars — one of the most colorful foliage plants',
+      '😴 Goes dormant in winter — don\'t panic when it dies back',
+      '🌡️ Native to tropical South America — loves Florida summers',
+      '⚠️ Toxic to pets and humans if ingested',
+      '🌱 Grows from tubers underground — can re-sprout each spring',
+    ],
+  },
+  {
+    id: 'plumeria',
+    emoji: '🌸',
+    name: 'Plumeria',
+    nickname: null,
+    scientific: 'Plumeria spp.',
+    location: 'Outdoor · Covered Patio (Partial Sun)',
+    zone: 'outdoor',
+    status: 'thriving',
+    waterFreqDays: [5, 7],
+    waterMethod: 'Water deeply but infrequently. Let soil dry out between waterings — plumerias hate wet feet. In summer, roughly once a week.',
+    thirstSigns: [
+      'Soil dry 2+ inches deep',
+      'Leaves beginning to wilt or feel soft',
+      'Pot is noticeably light',
+    ],
+    light: 'Loves full sun — needs 6+ hours. Current spot getting direct afternoon light is ideal. She\'s acclimated and thriving there.',
+    repot: 'Repot in spring if roots are circling or crowding. Plumerias like being slightly root-bound — don\'t rush it.',
+    health: 'Thriving in current position. Has been doing well in this light for a while — don\'t move her.',
+    facts: [
+      '🌺 The official flower of Hawaii — used in leis',
+      '🌙 Blooms are more fragrant at night to attract sphinx moths',
+      '🏝️ Sacred in several Southeast Asian cultures',
+      '💀 Goes fully dormant in winter — loses all leaves, looks dead, is not dead',
+      '🌳 Can live 50+ years and grow into a full tree outdoors in Florida',
+    ],
+  },
+  {
+    id: 'pineapple',
+    emoji: '🍍',
+    name: 'Pineapple Propagation',
+    nickname: 'Crown',
+    scientific: 'Ananas comosus',
+    location: 'Outdoor · Patio Edge (Sun)',
+    zone: 'outdoor',
+    status: 'propagating',
+    waterFreqDays: [3, 4],
+    waterMethod: 'Keep soil lightly moist — not soggy. At this propagation stage, consistent light moisture encourages root development. Don\'t let it dry out completely.',
+    thirstSigns: [
+      'Soil dry to the touch 1 inch down',
+      'Outer leaves starting to dry at tips',
+      'Center new growth looking dull or pausing',
+    ],
+    light: 'Needs full sun — pineapples are tropical sun-lovers. Current outdoor spot is correct.',
+    repot: 'Not yet — let her root properly first. Once you see consistent new center growth and the plant resists a gentle tug, roots are established. Then you can consider upsizing.',
+    health: 'In active propagation — ~1 month in. New center growth is a strong positive sign. Patience is the only tool here. Do not pull or tug the plant to test roots yet — let another 4–6 weeks pass.',
+    facts: [
+      '⏳ Takes 18–24 months from crown to fruit — you\'re in this for the long game',
+      '🍍 Each pineapple plant produces only ONE fruit in its lifetime',
+      '🔬 A pineapple is actually 100–200 individual berries fused together',
+      '🌱 After fruiting, the mother plant sends up "pups" — baby plants from the base',
+      '🏆 Florida is one of the best climates in the US to grow pineapple outdoors',
+    ],
+  },
+];
+
+// ─── STATE ───────────────────────────────────────────────────
+function loadState() {
+  try {
+    const raw = localStorage.getItem(STORAGE_KEY);
+    return raw ? JSON.parse(raw) : {};
+  } catch(e) { return {}; }
+}
+function saveState(state) {
+  try { localStorage.setItem(STORAGE_KEY, JSON.stringify(state)); } catch(e) {}
+}
+
+let state = loadState();
+let currentFilter = 'all';
+
+// Ensure each plant has a log array
+PLANTS.forEach(p => {
+  if (!state[p.id]) state[p.id] = { log: [] };
+  if (!state[p.id].log) state[p.id].log = [];
+});
+
+// ─── HELPERS ─────────────────────────────────────────────────
+function now() { return Date.now(); }
+
+function lastWateredMs(id) {
+  const log = state[id]?.log || [];
+  if (!log.length) return null;
+  return log[log.length - 1];
+}
+
+function daysSince(ms) {
+  if (!ms) return null;
+  return (now() - ms) / (1000 * 60 * 60 * 24);
+}
+
+function formatDate(ms) {
+  if (!ms) return 'Never';
+  const d = new Date(ms);
+  const today = new Date();
+  const diff = Math.floor((today - d) / 86400000);
+  if (diff === 0) return 'Today';
+  if (diff === 1) return 'Yesterday';
+  return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+}
+
+function waterUrgency(plant) {
+  const last = lastWateredMs(plant.id);
+  const days = daysSince(last);
+  if (days === null) return { pct: 100, cls: 'fill-urgent', label: 'Never watered — water now', urgent: true };
+  const maxDays = plant.waterFreqDays[1];
+  const pct = Math.min(100, (days / maxDays) * 100);
+  const minDays = plant.waterFreqDays[0];
+  if (days >= maxDays) return { pct: 100, cls: 'fill-urgent', label: 'Overdue — water now', urgent: true };
+  if (days >= minDays) return { pct, cls: 'fill-warn', label: `Due in ${Math.round(maxDays - days)}d`, urgent: false };
+  const daysLeft = Math.round(minDays - days);
+  return { pct, cls: 'fill-good', label: `Next in ~${daysLeft}d`, urgent: false };
+}
+
+function allActivePlants() {
+  return allPlants().filter(p => !state[p.id]?.hidden);
+}
+
+function waterDueCount() {
+  return allActivePlants().filter(p => {
+    const u = waterUrgency(p);
+    return u.urgent || u.cls === 'fill-warn';
+  }).length;
+}
+
+function thrivingCount() {
+  return allActivePlants().filter(p => p.status === 'thriving').length;
+}
+
+function lastWateredName() {
+  let latest = null, latestName = '—';
+  allActivePlants().forEach(p => {
+    const ms = lastWateredMs(p.id);
+    if (ms && (!latest || ms > latest)) { latest = ms; latestName = p.nickname || p.name.split(' ')[0]; }
+  });
+  return latestName;
+}
+
+// ─── RENDER ──────────────────────────────────────────────────
+function renderSummary() {
+  const active = allActivePlants();
+  document.getElementById('total-count').textContent = active.length;
+  document.getElementById('thriving-count').textContent = thrivingCount();
+  document.getElementById('water-due-count').textContent = waterDueCount();
+  document.getElementById('last-watered-name').textContent = lastWateredName();
+}
+
+function renderCards() {
+  const grid = document.getElementById('plant-grid');
+  grid.innerHTML = '';
+
+  const filtered = allActivePlants().filter(p => {
+    if (currentFilter === 'all') return true;
+    if (currentFilter === 'indoor') return p.zone === 'indoor';
+    if (currentFilter === 'outdoor') return p.zone === 'outdoor';
+    if (currentFilter === 'water-due') {
+      const u = waterUrgency(p);
+      return u.urgent || u.cls === 'fill-warn';
+    }
+    return true;
+  });
+
+  if (filtered.length === 0) {
+    grid.innerHTML = `<div style="text-align:center;padding:40px 20px;color:rgba(255,255,255,0.25);font-size:14px;">All plants are happy 🌿</div>`;
+    return;
+  }
+
+  // Group by zone
+  const indoor = filtered.filter(p => p.zone === 'indoor');
+  const outdoor = filtered.filter(p => p.zone === 'outdoor');
+
+  function renderGroup(plants, label) {
+    if (!plants.length) return;
+    if (currentFilter === 'all') {
+      const div = document.createElement('div');
+      div.className = 'section-divider';
+      div.textContent = label;
+      grid.appendChild(div);
+    }
+    plants.forEach(p => grid.appendChild(buildCard(p)));
+  }
+
+  renderGroup(indoor, '🪴 Indoor');
+  renderGroup(outdoor, '☀️ Outdoor');
+}
+
+function buildCard(plant) {
+  const u = waterUrgency(plant);
+  const last = lastWateredMs(plant.id);
+  const log = state[plant.id]?.log || [];
+
+  const card = document.createElement('div');
+  card.className = 'card';
+  card.dataset.id = plant.id;
+
+  const statusClass = plant.status === 'thriving' ? 'status-thriving' : plant.status === 'watch' ? 'status-watch' : 'status-propagating';
+  const statusLabel = plant.status === 'thriving' ? 'Thriving' : plant.status === 'watch' ? 'Watch' : 'Propagating';
+
+  const factsHtml = plant.facts.map(f => `<span class="fact-pill">${f}</span>`).join('');
+  const signsHtml = plant.thirstSigns.map(s => `<div class="thirst-sign">${s}</div>`).join('');
+  const logHtml = log.length
+    ? [...log].reverse().slice(0, 8).map(ms => `<div class="log-entry">💧 ${new Date(ms).toLocaleString('en-US', {month:'short',day:'numeric',hour:'numeric',minute:'2-digit'})}</div>`).join('')
+    : `<div class="log-entry" style="color:rgba(255,255,255,0.2)">No waterings logged yet</div>`;
+
+  card.innerHTML = `
+    <div class="card-header" onclick="toggleCard('${plant.id}')">
+      <div class="card-emoji">${plant.emoji}</div>
+      <div class="card-title-group">
+        <div class="card-name">${plant.nickname ? plant.nickname : plant.name}</div>
+        ${plant.nickname ? `<div class="card-nickname">${plant.name}</div>` : ''}
+        <div class="card-location">${plant.location}</div>
+      </div>
+      <div class="status-badge ${statusClass}">${statusLabel}</div>
+    </div>
+
+    <div class="water-section">
+      <div class="water-info">
+        <div class="water-label">Last Watered</div>
+        <div class="water-last">${formatDate(last)}</div>
+        <div class="water-next ${u.urgent ? 'urgent' : ''}">${u.label}</div>
+      </div>
+      <button class="water-btn" onclick="logWater('${plant.id}', event)">💧 Watered</button>
+    </div>
+
+    <div class="water-bar-wrap">
+      <div class="water-bar-track">
+        <div class="water-bar-fill ${u.cls}" style="width:${u.pct}%"></div>
+      </div>
+    </div>
+
+    <div class="card-detail" id="detail-${plant.id}">
+      <div class="detail-section">
+        <div class="detail-label">Health Note</div>
+        <div class="detail-text">${plant.health}</div>
+      </div>
+
+      <div class="detail-section">
+        <div class="detail-label">How to Tell She's Thirsty</div>
+        <div class="thirst-signs">${signsHtml}</div>
+      </div>
+
+      <div class="detail-section">
+        <div class="detail-label">How to Water</div>
+        <div class="detail-text">${plant.waterMethod}</div>
+      </div>
+
+      <div class="detail-section">
+        <div class="detail-label">Light</div>
+        <div class="detail-text">${plant.light}</div>
+      </div>
+
+      <div class="detail-section">
+        <div class="detail-label">Repotting</div>
+        <div class="repot-row">
+          <span class="repot-icon">🪴</span>
+          <span class="repot-text">${plant.repot}</span>
+        </div>
+      </div>
+
+      <div class="detail-section">
+        <div class="detail-label">Plant Facts</div>
+        <div>${factsHtml}</div>
+      </div>
+
+      <div class="detail-section">
+        <div class="detail-label">Watering Log</div>
+        <div class="log-entries">${logHtml}</div>
+      </div>
+
+      <button class="remove-btn" onclick="promptRemove('${plant.id}', event)">🗑 Remove ${plant.nickname || plant.name} from garden</button>
+    </div>
+  `;
+
+  return card;
+}
+
+// ─── INTERACTIONS ─────────────────────────────────────────────
+function toggleCard(id) {
+  const detail = document.getElementById(`detail-${id}`);
+  if (detail) detail.classList.toggle('open');
+}
+
+function logWater(id, e) {
+  e.stopPropagation();
+  if (!state[id]) state[id] = { log: [] };
+  state[id].log.push(now());
+  saveState(state);
+  renderCards();
+  renderSummary();
+
+  const plant = allPlants().find(p => p.id === id);
+  showToast(`💧 ${plant.nickname || plant.name} watered!`);
+}
+
+function filterCards(filter, btn) {
+  currentFilter = filter;
+  document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+  btn.classList.add('active');
+  renderCards();
+}
+
+let toastTimeout;
+function showToast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  clearTimeout(toastTimeout);
+  toastTimeout = setTimeout(() => t.classList.remove('show'), 2500);
+}
+
+// ─── WEATHER ──────────────────────────────────────────────────
+const WMO_ICONS = {
+  0:'☀️', 1:'🌤️', 2:'⛅', 3:'☁️',
+  45:'🌫️', 48:'🌫️',
+  51:'🌦️', 53:'🌦️', 55:'🌧️',
+  61:'🌧️', 63:'🌧️', 65:'🌧️',
+  71:'🌨️', 73:'🌨️', 75:'🌨️',
+  80:'🌦️', 81:'🌦️', 82:'⛈️',
+  95:'⛈️', 96:'⛈️', 99:'⛈️',
+};
+const WMO_DESC = {
+  0:'Clear sky', 1:'Mostly clear', 2:'Partly cloudy', 3:'Overcast',
+  45:'Foggy', 48:'Foggy',
+  51:'Light drizzle', 53:'Drizzle', 55:'Heavy drizzle',
+  61:'Light rain', 63:'Rain', 65:'Heavy rain',
+  71:'Light snow', 73:'Snow', 75:'Heavy snow',
+  80:'Rain showers', 81:'Rain showers', 82:'Violent showers',
+  95:'Thunderstorm', 96:'Thunderstorm', 99:'Severe thunderstorm',
+};
+const DAYS = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
+
+function plantWeatherTip(code, windMph, rainIn, tempF) {
+  if (code >= 95) return { cls: 'warn', msg: '⛈️ Bring caladium inside — storm incoming' };
+  if (code >= 61) return { cls: 'warn', msg: '🌧️ Skip watering today — rain will do it' };
+  if (code >= 51) return { cls: 'caution', msg: '🌦️ Light rain expected — hold off on watering outdoor plants' };
+  if (tempF >= 98) return { cls: 'warn', msg: '🌡️ Extreme heat — check caladium & pineapple hydration midday' };
+  if (tempF >= 92) return { cls: 'caution', msg: '☀️ Hot day — caladium may need water by afternoon' };
+  if (windMph >= 20) return { cls: 'caution', msg: '💨 Windy — secure lighter pots on the patio' };
+  if (code <= 1) return { cls: '', msg: '🌿 Great day — all plants happy in their spots' };
+  return { cls: '', msg: '🌤️ Good conditions — no moves needed today' };
+}
+
+async function fetchWeather() {
+  try {
+    const url = 'https://api.open-meteo.com/v1/forecast?latitude=28.4989&longitude=-81.5679&current=temperature_2m,weathercode,windspeed_10m,precipitation&daily=weathercode,temperature_2m_max,temperature_2m_min,precipitation_sum&temperature_unit=fahrenheit&wind_speed_unit=mph&precipitation_unit=inch&timezone=America%2FNew_York&forecast_days=5';
+    const res = await fetch(url);
+    const data = await res.json();
+    renderWeather(data);
+  } catch(e) {
+    document.getElementById('weather-loading').textContent = 'Weather unavailable — check connection';
+  }
+}
+
+function renderWeather(data) {
+  const strip = document.getElementById('weather-strip');
+  const c = data.current;
+  const d = data.daily;
+  const code = c.weathercode;
+  const temp = Math.round(c.temperature_2m);
+  const wind = Math.round(c.windspeed_10m);
+  const rain = c.precipitation;
+  const tip = plantWeatherTip(code, wind, rain, temp);
+
+  const forecastHtml = d.time.map((t, i) => {
+    const date = new Date(t + 'T12:00:00');
+    const isToday = i === 0;
+    const dow = isToday ? 'Today' : DAYS[date.getDay()];
+    const rainAmt = d.precipitation_sum[i];
+    return `
+      <div class="forecast-day ${isToday ? 'today' : ''}">
+        <div class="forecast-dow">${dow}</div>
+        <div class="forecast-icon">${WMO_ICONS[d.weathercode[i]] || '🌡️'}</div>
+        <div class="forecast-hi">${Math.round(d.temperature_2m_max[i])}°</div>
+        <div class="forecast-lo">${Math.round(d.temperature_2m_min[i])}°</div>
+        ${rainAmt > 0.01 ? `<div class="forecast-rain">${rainAmt.toFixed(2)}"</div>` : ''}
+      </div>`;
+  }).join('');
+
+  strip.innerHTML = `
+    <div class="weather-current">
+      <div class="weather-icon">${WMO_ICONS[code] || '🌡️'}</div>
+      <div class="weather-main">
+        <div class="weather-temp">${temp}°F</div>
+        <div class="weather-desc">${WMO_DESC[code] || 'Unknown'}</div>
+        <div class="weather-meta">Wind ${wind} mph · Windermere, FL</div>
+      </div>
+      <div class="weather-plant-tip ${tip.cls}">${tip.msg}</div>
+    </div>
+    <div class="forecast-row">${forecastHtml}</div>
+  `;
+}
+
+// ─── CUSTOM PLANTS (user-added) ───────────────────────────────
+const CUSTOM_KEY = 'rob_garden_custom_v1';
+
+function loadCustomPlants() {
+  try { return JSON.parse(localStorage.getItem(CUSTOM_KEY) || '[]'); } catch(e) { return []; }
+}
+function saveCustomPlants(arr) {
+  try { localStorage.setItem(CUSTOM_KEY, JSON.stringify(arr)); } catch(e) {}
+}
+
+function allPlants() {
+  return [...PLANTS, ...loadCustomPlants()];
+}
+
+// Patch all render functions to use allPlants()
+const _origRenderCards = renderCards;
+// (we override below by redefining after original)
+
+// ─── EMOJI PICKER ─────────────────────────────────────────────
+let selectedEmoji = '🌿';
+function initEmojiPicker() {
+  const row = document.getElementById('emoji-row');
+  const emojis = ['🌿','🌱','🌳','🌸','🌺','🌻','🌵','🍃','🪴','🎋','🎍','🍀','🌾','🪷','🍍','🌴'];
+  row.innerHTML = emojis.map(e =>
+    `<span class="emoji-opt${e===selectedEmoji?' selected':''}" onclick="selectEmoji('${e}',this)">${e}</span>`
+  ).join('');
+}
+function selectEmoji(e, el) {
+  selectedEmoji = e;
+  document.querySelectorAll('.emoji-opt').forEach(o => o.classList.remove('selected'));
+  el.classList.add('selected');
+}
+
+// ─── ADD MODAL ────────────────────────────────────────────────
+function openAddModal() {
+  selectedEmoji = '🌿';
+  document.getElementById('f-name').value = '';
+  document.getElementById('f-nickname').value = '';
+  document.getElementById('f-location').value = '';
+  document.getElementById('f-notes').value = '';
+  document.getElementById('f-water-min').value = '';
+  document.getElementById('f-water-max').value = '';
+  document.getElementById('f-zone').value = 'indoor';
+  document.getElementById('f-status').value = 'thriving';
+  document.getElementById('ai-generating').classList.remove('show');
+  document.getElementById('btn-save').disabled = false;
+  initEmojiPicker();
+  document.getElementById('add-modal').classList.add('open');
+}
+function closeAddModal() {
+  document.getElementById('add-modal').classList.remove('open');
+}
+function handleOverlayClick(e) {
+  if (e.target === document.getElementById('add-modal')) closeAddModal();
+}
+
+async function saveNewPlant() {
+  const name = document.getElementById('f-name').value.trim();
+  if (!name) { showToast('⚠️ Give your plant a name first'); return; }
+
+  const waterMin = parseInt(document.getElementById('f-water-min').value) || 7;
+  const waterMax = parseInt(document.getElementById('f-water-max').value) || 10;
+  const zone = document.getElementById('f-zone').value;
+  const status = document.getElementById('f-status').value;
+  const locDetail = document.getElementById('f-location').value.trim();
+  const notes = document.getElementById('f-notes').value.trim();
+  const nickname = document.getElementById('f-nickname').value.trim();
+  const location = `${zone === 'indoor' ? 'Indoor' : 'Outdoor'}${locDetail ? ' · ' + locDetail : ''}`;
+
+  // Show AI generating state
+  const aiBox = document.getElementById('ai-generating');
+  const saveBtn = document.getElementById('btn-save');
+  aiBox.classList.add('show');
+  saveBtn.disabled = true;
+
+  let careData = {
+    waterMethod: `Water every ${waterMin}–${waterMax} days or when the top inch of soil is dry.`,
+    thirstSigns: ['Soil dry to the touch', 'Leaves look slightly wilted', 'Pot feels lighter than usual'],
+    light: 'Provide appropriate light for this plant species.',
+    repot: 'Repot when roots begin circling the bottom of the pot.',
+    health: 'Newly added — monitor for first few weeks.',
+    facts: [`🌿 ${name} added to your collection`],
+  };
+
+  try {
+    const prompt = `You are a plant care expert. Given this plant: "${name}"${notes ? ` (notes: ${notes})` : ''}, location: ${location}, provide care info as JSON only, no markdown, no explanation. Return exactly this structure:
+{
+  "waterMethod": "one sentence on how to water",
+  "thirstSigns": ["sign 1", "sign 2", "sign 3"],
+  "light": "one sentence on light needs",
+  "repot": "one sentence on repotting",
+  "health": "one sentence health note for a new plant",
+  "facts": ["emoji + fact 1", "emoji + fact 2", "emoji + fact 3", "emoji + fact 4"]
+}`;
+
+    const res = await fetch('https://api.anthropic.com/v1/messages', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        model: 'claude-sonnet-4-6',
+        max_tokens: 1000,
+        messages: [{ role: 'user', content: prompt }]
+      })
+    });
+    const data = await res.json();
+    const text = data.content?.[0]?.text || '';
+    const clean = text.replace(/```json|```/g, '').trim();
+    const parsed = JSON.parse(clean);
+    careData = { ...careData, ...parsed };
+  } catch(e) {
+    // fallback to defaults — no problem
+  }
+
+  const id = 'custom_' + Date.now();
+  const newPlant = {
+    id,
+    emoji: selectedEmoji,
+    name,
+    nickname: nickname || null,
+    scientific: '',
+    location,
+    zone,
+    status,
+    waterFreqDays: [waterMin, waterMax],
+    ...careData,
+    _custom: true,
+  };
+
+  const customs = loadCustomPlants();
+  customs.push(newPlant);
+  saveCustomPlants(customs);
+
+  if (!state[id]) state[id] = { log: [] };
+  saveState(state);
+
+  aiBox.classList.remove('show');
+  saveBtn.disabled = false;
+  closeAddModal();
+  renderCards();
+  renderSummary();
+  showToast(`🌱 ${nickname || name} added to your garden!`);
+}
+
+// ─── REMOVE PLANT ─────────────────────────────────────────────
+let pendingRemoveId = null;
+
+function promptRemove(id, e) {
+  e.stopPropagation();
+  pendingRemoveId = id;
+  const plant = allPlants().find(p => p.id === id);
+  document.getElementById('confirm-emoji').textContent = plant?.emoji || '🪴';
+  document.getElementById('confirm-title').textContent = `Remove ${plant?.nickname || plant?.name}?`;
+  document.getElementById('confirm-msg').textContent =
+    `This will remove ${plant?.nickname || plant?.name} and all her watering history. Can't be undone.`;
+  document.getElementById('confirm-overlay').classList.add('open');
+}
+
+function closeConfirm() {
+  pendingRemoveId = null;
+  document.getElementById('confirm-overlay').classList.remove('open');
+}
+
+function confirmRemove() {
+  if (!pendingRemoveId) return;
+  const id = pendingRemoveId;
+  const plant = allPlants().find(p => p.id === id);
+
+  // Remove from custom list (built-ins can also be "removed" via state flag)
+  const customs = loadCustomPlants().filter(p => p.id !== id);
+  saveCustomPlants(customs);
+
+  // For built-in plants, mark as hidden in state
+  if (!id.startsWith('custom_')) {
+    state[id] = { ...state[id], hidden: true };
+    saveState(state);
+  } else {
+    delete state[id];
+    saveState(state);
+  }
+
+  closeConfirm();
+  renderCards();
+  renderSummary();
+  showToast(`🌱 ${plant?.nickname || plant?.name} removed from your garden`);
+}
+
+// ─── INIT ─────────────────────────────────────────────────────
+renderSummary();
+renderCards();
+fetchWeather();
+
+// Refresh cards every minute, weather every 15 min
+setInterval(() => { renderCards(); renderSummary(); }, 60000);
+setInterval(() => { fetchWeather(); }, 15 * 60 * 1000);
+</script>
+</body>
+</html>
